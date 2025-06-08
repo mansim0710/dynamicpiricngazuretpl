@@ -1,1 +1,73 @@
+name: Deploy and Retrain Model to Azure
+
+on:
+  push:
+    branches:
+      - main  # Trigger on pushes to the main branch
+  schedule:
+    - cron: "0 0 * * 0" # Trigger weekly retraining job (adjust as needed)
+
+jobs:
+  # Job 1: Run unit and integration tests
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        
+      - name: Set up Python environment
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: |
+          pytest tests/  # Ensure tests are in the tests/ directory
+
+  # Job 2: Deploy Model to Azure
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python environment
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Deploy model to Azure
+        run: |
+          python src/deploy_model.py  # Call your model deployment script
+
+  # Job 3: Retrain Model (Triggered by performance degradation or weekly)
+  retrain:
+    runs-on: ubuntu-latest
+    needs: test
+    if: ${{ github.event_name == 'schedule' }}  # Trigger retraining only if it's scheduled or performance degraded
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python environment
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Trigger retraining
+        run: |
+          python src/retrain.py  # Call your retraining script to handle model retraining and deployment
 
